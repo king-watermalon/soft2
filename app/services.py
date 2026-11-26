@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import random
 import sqlite3
 from datetime import datetime
 from typing import Callable, Optional
@@ -201,6 +202,53 @@ class RegistrationService:
         registration = self.registrations.get(registration_id)
         self._publish(registration, activity, self.students.get(registration.student_id))
         return Result.success("已取消报名", data=registration)
+
+    # ---------- 抽签（CR-01） ----------
+
+    def draw_lottery(self, activity_id: int, rng: random.Random | None = None) -> Result:
+        """对抽签型活动执行一次抽签：名额内随机录取，其余置为已拒绝。"""
+        activity = self.activities.get(activity_id)
+        if activity is None:
+            return Result.failure(ErrorCode.ACTIVITY_NOT_FOUND, "活动不存在")
+        if activity.policy_type is not PolicyType.LOTTERY:
+            return Result.failure(
+                ErrorCode.INVALID_STATE, "只有抽签型活动可以执行抽签"
+            )
+
+        pendings = self.registrations.list_by_activity(
+            activity_id, RegistrationStatus.PENDING
+        )
+        if not pendings:
+            return Result.failure(ErrorCode.INVALID_STATE, "当前没有待抽签的报名")
+
+        approved = self.registrations.count_by_status(
+            activity_id, RegistrationStatus.APPROVED
+        )
+        seats = max(activity.capacity - approved, 0)
+        picker = rng or random.Random()
+        winners = picker.sample(pendings, min(seats, len(pendings)))
+        winner_ids = {item.registration_id for item in winners}
+
+        now = self.clock()
+        for registration in pendings:
+            status = (
+                RegistrationStatus.APPROVED
+                if registration.registration_id in winner_ids
+                else RegistrationStatus.REJECTED
+            )
+            self.registrations.update_status(registration.registration_id, status, now)
+        self.conn.commit()
+
+        for registration in pendings:
+            refreshed = self.registrations.get(registration.registration_id)
+            self._publish(
+                refreshed, activity, self.students.get(registration.student_id)
+            )
+
+        return Result.success(
+            f"抽签完成：{len(winners)} 人录取，{len(pendings) - len(winners)} 人未录取",
+            data={"approved": len(winners), "rejected": len(pendings) - len(winners)},
+        )
 
     # ---------- 查询 ----------
 

@@ -57,6 +57,22 @@ class ReviewRegistrationPolicy(RegistrationPolicy):
         return PolicyDecision(RegistrationStatus.PENDING, "申请已提交，等待管理员审核")
 
 
+class LotteryRegistrationPolicy(RegistrationPolicy):
+    """CR-01 新增：抽签型活动。
+
+    报名期间所有人进入待审核队列；报名截止后由管理员触发一次抽签，
+    在名额内随机录取。策略本身只决定"初始状态"，
+    录取逻辑在 RegistrationService.draw_lottery()。
+    """
+
+    policy_type = PolicyType.LOTTERY
+
+    def decide(self, activity, student, approved_count) -> PolicyDecision:
+        return PolicyDecision(
+            RegistrationStatus.PENDING, "已进入抽签池，录取结果由抽签决定"
+        )
+
+
 class PolicyFactory:
     """按 activity.policy_type 取策略实例。
 
@@ -69,6 +85,7 @@ class PolicyFactory:
         defaults = (
             DirectRegistrationPolicy(),
             ReviewRegistrationPolicy(),
+            LotteryRegistrationPolicy(),
         )
         for policy in policies if policies is not None else defaults:
             self.register(policy)

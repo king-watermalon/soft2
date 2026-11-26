@@ -39,12 +39,14 @@ class PolicyType(str, Enum):
 
     DIRECT = "DIRECT"
     REVIEW = "REVIEW"
+    LOTTERY = "LOTTERY"
 
     @property
     def label(self) -> str:
         return {
             PolicyType.DIRECT: "直接报名",
             PolicyType.REVIEW: "管理员审核",
+            PolicyType.LOTTERY: "抽签录取",
         }[self]
 
 

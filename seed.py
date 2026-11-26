@@ -83,6 +83,14 @@ def main() -> None:
             50,
             "DIRECT",
         )
+        a4 = activities.create(
+            "迎新晚会门票（抽签）",
+            "文艺",
+            (now + timedelta(days=10)).replace(microsecond=0),
+            "大礼堂",
+            30,
+            "LOTTERY",
+        ).data
 
         service = RegistrationService(conn)
         print(service.register("student1", a1).message)
@@ -91,6 +99,9 @@ def main() -> None:
         print(service.register("student3", a2).message)
         print(service.register("student1", a3).message)
         print(service.register("student2", a3).message)
+        print(service.register("student1", a4).message)
+        print(service.register("student2", a4).message)
+        print(service.register("student3", a4).message)
 
     print(f"演示数据已生成：{DB_PATH}")
     print("演示账号：admin/admin123、student1/123456、student2/123456、student3/123456")

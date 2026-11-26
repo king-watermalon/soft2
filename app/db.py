@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS activity (
     start_at    TEXT NOT NULL,
     location    TEXT NOT NULL DEFAULT '',
     capacity    INTEGER NOT NULL CHECK (capacity > 0),
-    policy_type TEXT NOT NULL CHECK (policy_type IN ('DIRECT', 'REVIEW')),
+    policy_type TEXT NOT NULL CHECK (policy_type IN ('DIRECT', 'REVIEW', 'LOTTERY')),
     status      TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'CLOSED')),
     created_at  TEXT NOT NULL
 );
@@ -68,6 +68,17 @@ CREATE TABLE IF NOT EXISTS notify_outbox (
     created_at  TEXT NOT NULL,
     UNIQUE (event_id, listener)
 );
+
+CREATE TABLE IF NOT EXISTS email_outbox (
+    email_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id    TEXT NOT NULL,
+    student_id  TEXT NOT NULL,
+    address     TEXT NOT NULL,
+    subject     TEXT NOT NULL,
+    body        TEXT NOT NULL,
+    created_at  TEXT NOT NULL,
+    UNIQUE (event_id, student_id, address)
+);
 """
 
 
@@ -94,8 +105,53 @@ def close_db(exc: BaseException | None = None) -> None:
         db.close()
 
 
+_ACTIVITY_NEW_DDL = """
+CREATE TABLE activity_new (
+    activity_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title       TEXT NOT NULL,
+    category    TEXT NOT NULL DEFAULT '',
+    start_at    TEXT NOT NULL,
+    location    TEXT NOT NULL DEFAULT '',
+    capacity    INTEGER NOT NULL CHECK (capacity > 0),
+    policy_type TEXT NOT NULL CHECK (policy_type IN ('DIRECT', 'REVIEW', 'LOTTERY')),
+    status      TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'CLOSED')),
+    created_at  TEXT NOT NULL
+)
+"""
+
+_COLUMNS = (
+    "activity_id, title, category, start_at, location, "
+    "capacity, policy_type, status, created_at"
+)
+
+
+def migrate_policy_type(conn: sqlite3.Connection) -> bool:
+    """CR-01 附带的数据迁移：放宽 activity.policy_type 的 CHECK 约束。
+
+    变更前的库把 policy_type 限制在 DIRECT/REVIEW，新增 LOTTERY 必须重建表。
+    这是本次变更里唯一"绕不过去"的修改点，已写入变更影响分析。
+    """
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'activity'"
+    ).fetchone()
+    if row is None or "LOTTERY" in (row["sql"] or ""):
+        return False
+
+    conn.execute("PRAGMA foreign_keys = OFF")
+    conn.execute(_ACTIVITY_NEW_DDL)
+    conn.execute(
+        f"INSERT INTO activity_new ({_COLUMNS}) SELECT {_COLUMNS} FROM activity"
+    )
+    conn.execute("DROP TABLE activity")
+    conn.execute("ALTER TABLE activity_new RENAME TO activity")
+    conn.commit()
+    conn.execute("PRAGMA foreign_keys = ON")
+    return True
+
+
 def init_db(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
+    migrate_policy_type(conn)
     conn.commit()
 
 

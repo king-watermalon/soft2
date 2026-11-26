@@ -52,6 +52,12 @@
       <td>{{ row.stats.remaining }}</td>
       <td class="inline-actions">
         <a class="btn ghost small" href="{{ url_for('admin.edit_activity', activity_id=a.activity_id) }}">编辑</a>
+        {% if a.policy_type.value == 'LOTTERY' and row.stats.pending %}
+        <form method="post" action="{{ url_for('admin.draw_lottery', activity_id=a.activity_id) }}"
+              onsubmit="return confirm('确认执行抽签？结果不可撤销。');">
+          <button class="btn small" type="submit">抽签</button>
+        </form>
+        {% endif %}
         {% if a.status.value == 'OPEN' %}
         <form method="post" action="{{ url_for('admin.close_activity', activity_id=a.activity_id) }}">
           <button class="btn ghost small" type="submit">关闭</button>

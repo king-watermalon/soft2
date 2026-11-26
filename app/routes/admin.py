@@ -108,6 +108,14 @@ def close_activity(activity_id: int):
     return redirect(url_for("admin.detail", activity_id=activity_id))
 
 
+@bp.route("/activity/<int:activity_id>/draw", methods=["POST"])
+@admin_required
+def draw_lottery(activity_id: int):
+    result = registration_service().draw_lottery(activity_id)
+    flash(result.message, "success" if result.ok else "error")
+    return redirect(url_for("admin.detail", activity_id=activity_id))
+
+
 @bp.route("/activity/<int:activity_id>")
 @admin_required
 def detail(activity_id: int):

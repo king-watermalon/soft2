@@ -42,7 +42,7 @@ def test_start_time_must_be_parsable(ctx):
 
 
 def test_policy_type_must_be_supported(ctx, clock):
-    result = ctx.activity_service.create("活动", "", clock.future(1), "", 2, "LOTTERY")
+    result = ctx.activity_service.create("活动", "", clock.future(1), "", 2, "BIDDING")
     assert not result.ok
     assert result.code == ErrorCode.VALIDATION_ERROR
 

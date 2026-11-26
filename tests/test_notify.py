@@ -67,7 +67,7 @@ def test_successful_delivery_is_recorded_in_outbox(app):
         assert RegistrationService(conn).register("s1", activity_id).ok
 
         rows = conn.execute("SELECT * FROM notify_outbox").fetchall()
-        assert {row["listener"] for row in rows} == {"in_app", "audit"}
+        assert {row["listener"] for row in rows} == {"in_app", "email", "audit"}
         assert all(row["status"] == "SENT" for row in rows)
 
 
@@ -92,7 +92,7 @@ def test_publishing_same_event_twice_does_not_duplicate_message(app):
         assert len(MessageRepository(conn).list_by_student("s1")) == 2
 
         rows = OutboxRepository(conn).list_by_event(event.event_id)
-        assert len(rows) == 2  # in_app + audit 各一条流水
+        assert len(rows) == 3  # in_app + email + audit 各一条流水
         in_app = next(row for row in rows if row["listener"] == "in_app")
         assert in_app["status"] == "SENT"
         assert in_app["retry_count"] == 1

@@ -158,6 +158,48 @@ class AuditLogListener(EventListener):
         )
 
 
+class EmailNotificationListener(EventListener):
+    """CR-02 新增：邮件通知渠道。
+
+    只新增一个观察者，报名业务代码一行未改（OCP）。真正的投递由后台任务
+    消费 email_outbox 完成，这里只落库。
+    """
+
+    name = "email"
+
+    SUBJECTS = {
+        EventType.REGISTRATION_SUBMITTED: "报名申请已提交",
+        EventType.REGISTRATION_APPROVED: "报名结果：已通过",
+        EventType.REGISTRATION_REJECTED: "报名结果：未通过",
+        EventType.REGISTRATION_CANCELLED: "报名已取消",
+    }
+
+    def __init__(self, conn, clock: Callable[[], datetime] = datetime.now) -> None:
+        self._conn = conn
+        self._clock = clock
+
+    def handle(self, event: RegistrationEvent) -> None:
+        address = f"{event.student.student_id}@campus.edu.cn"
+        subject = self.SUBJECTS[event.type]
+        body = InAppNotificationListener.TEMPLATES[event.type].format(
+            title=event.activity.title
+        )
+        self._conn.execute(
+            """INSERT OR IGNORE INTO email_outbox
+               (event_id, student_id, address, subject, body, created_at)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (
+                event.event_id,
+                event.student.student_id,
+                address,
+                subject,
+                body,
+                self._clock().isoformat(timespec="seconds"),
+            ),
+        )
+        self._conn.commit()
+
+
 def build_event_bus(
     conn,
     clock: Callable[[], datetime] = datetime.now,
@@ -166,8 +208,10 @@ def build_event_bus(
     """装配事件总线：订阅关系集中在一处，便于替换与扩展。"""
     bus = SimpleEventBus(OutboxRepository(conn), clock=clock)
     notification = InAppNotificationListener(MessageRepository(conn), clock=clock)
+    email = EmailNotificationListener(conn, clock=clock)
     for event_type in EventType:
         bus.subscribe(event_type, notification)
+        bus.subscribe(event_type, email)
     if with_audit:
         audit = AuditLogListener()
         for event_type in EventType:

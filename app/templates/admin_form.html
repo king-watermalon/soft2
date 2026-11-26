@@ -26,6 +26,7 @@
     <select name="policy_type">
       <option value="DIRECT" {% if (form.get('policy_type') or (activity.policy_type.value if activity else 'DIRECT')) == 'DIRECT' %}selected{% endif %}>直接报名（立即通过）</option>
       <option value="REVIEW" {% if (form.get('policy_type') or (activity.policy_type.value if activity else '')) == 'REVIEW' %}selected{% endif %}>管理员审核（先待审核）</option>
+      <option value="LOTTERY" {% if (form.get('policy_type') or (activity.policy_type.value if activity else '')) == 'LOTTERY' %}selected{% endif %}>抽签录取（报名后统一抽签）</option>
     </select>
   </label>
   <div class="inline-actions">
