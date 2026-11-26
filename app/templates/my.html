@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}我的报名{% endblock %}
+{% block content %}
+<h1>我的报名</h1>
+{% if rows %}
+<table class="table">
+  <thead><tr><th>活动</th><th>报名方式</th><th>状态</th><th>提交时间</th><th>操作</th></tr></thead>
+  <tbody>
+  {% for row in rows %}
+    <tr>
+      <td><a href="{{ url_for('student.detail', activity_id=row.activity.activity_id) }}">{{ row.activity.title }}</a></td>
+      <td>{{ row.activity.policy_type.label }}</td>
+      <td><span class="status {{ row.registration.status.value|lower }}">{{ row.registration.status.label }}</span></td>
+      <td>{{ row.registration.created_at|dt }}</td>
+      <td>
+        {% if row.registration.status.value in ('PENDING', 'APPROVED') %}
+          <form method="post" action="{{ url_for('student.cancel', registration_id=row.registration.registration_id) }}">
+            <button class="btn ghost small" type="submit">取消</button>
+          </form>
+        {% else %}<span class="hint">—</span>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">你还没有报名任何活动。</p>
+{% endif %}
+{% endblock %}

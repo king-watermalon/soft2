@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}页面不存在{% endblock %}
+{% block content %}
+<div class="empty-page">
+  <h1>404</h1>
+  <p>{{ message or "页面不存在" }}</p>
+  <p><a class="btn" href="{{ url_for('student.index') }}">回到活动列表</a></p>
+</div>
+{% endblock %}

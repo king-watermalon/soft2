@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}站内消息{% endblock %}
+{% block content %}
+<h1>站内消息</h1>
+{% if items %}
+<ul class="messages">
+  {% for item in items %}
+  <li class="{{ 'unread' if not item.is_read }}">
+    <p>{{ item.content }}</p>
+    <span class="meta">{{ item.created_at|dt }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">暂无消息。报名和审核结果会在这里通知你。</p>
+{% endif %}
+{% endblock %}

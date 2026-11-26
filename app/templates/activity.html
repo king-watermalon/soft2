@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ activity.title }}{% endblock %}
+{% block content %}
+<p class="crumb"><a href="{{ url_for('student.index') }}">← 返回活动列表</a></p>
+
+<article class="detail">
+  <div class="card-head">
+    <h1>{{ activity.title }}</h1>
+    <span class="tag">{{ activity.policy_type.label }}</span>
+  </div>
+  <dl class="info">
+    <dt>分类</dt><dd>{{ activity.category or "未分类" }}</dd>
+    <dt>开始时间</dt><dd>{{ activity.start_at|dt }}</dd>
+    <dt>地点</dt><dd>{{ activity.location or "地点待定" }}</dd>
+    <dt>人数上限</dt><dd>{{ activity.capacity }}</dd>
+    <dt>活动状态</dt><dd>{{ "已关闭" if activity.status.value == 'CLOSED' else "开放报名" }}</dd>
+  </dl>
+
+  <div class="stat-row">
+    <div><strong>{{ stats.approved }}</strong><span>已通过</span></div>
+    <div><strong>{{ stats.pending }}</strong><span>待审核</span></div>
+    <div><strong>{{ stats.remaining }}</strong><span>剩余名额</span></div>
+    <div><strong>{{ stats.rejected + stats.cancelled }}</strong><span>已拒绝/取消</span></div>
+  </div>
+
+  <div class="actions">
+    {% if active %}
+      <span class="status {{ active.status.value|lower }}">当前状态：{{ active.status.label }}</span>
+      <form method="post" action="{{ url_for('student.cancel', registration_id=active.registration_id) }}">
+        <button class="btn ghost" type="submit">取消报名</button>
+      </form>
+    {% elif activity.status.value == 'CLOSED' %}
+      <button class="btn" disabled>活动已关闭</button>
+    {% elif activity.start_at <= now %}
+      <button class="btn" disabled>活动已开始</button>
+    {% elif stats.is_full %}
+      <button class="btn" disabled>名额已满</button>
+    {% else %}
+      <form method="post" action="{{ url_for('student.register', activity_id=activity.activity_id) }}">
+        <button class="btn" type="submit">立即报名</button>
+      </form>
+    {% endif %}
+    {% if not me %}
+      <span class="hint">报名需要先 <a href="{{ url_for('auth.login', next=url_for('student.detail', activity_id=activity.activity_id)) }}">登录</a></span>
+    {% endif %}
+  </div>
+</article>
+
+{% if history %}
+<h2 class="section">我的报名记录</h2>
+<table class="table">
+  <thead><tr><th>报名编号</th><th>状态</th><th>提交时间</th><th>更新时间</th></tr></thead>
+  <tbody>
+  {% for item in history %}
+    <tr>
+      <td>#{{ item.registration_id }}</td>
+      <td><span class="status {{ item.status.value|lower }}">{{ item.status.label }}</span></td>
+      <td>{{ item.created_at|dt }}</td>
+      <td>{{ item.updated_at|dt }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

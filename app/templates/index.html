@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}活动列表{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>校园活动</h1>
+  <form class="search" method="get" action="{{ url_for('student.index') }}">
+    <input type="search" name="q" value="{{ keyword }}" placeholder="按活动名称筛选">
+    <button type="submit">筛选</button>
+    {% if keyword %}<a class="link" href="{{ url_for('student.index') }}">清除</a>{% endif %}
+  </form>
+</div>
+
+{% if cards %}
+<div class="cards">
+  {% for card in cards %}
+    {% set a = card.activity %}
+    <article class="card">
+      <div class="card-head">
+        <h2><a href="{{ url_for('student.detail', activity_id=a.activity_id) }}">{{ a.title }}</a></h2>
+        <span class="tag">{{ a.policy_type.label }}</span>
+      </div>
+      <p class="meta">{{ a.category or "未分类" }} · {{ a.start_at|dt }} · {{ a.location or "地点待定" }}</p>
+      <p class="stats">已通过 {{ card.stats.approved }}/{{ a.capacity }} · 待审核 {{ card.stats.pending }} · 剩余 {{ card.stats.remaining }}</p>
+      <div class="card-foot">
+        {% if a.status.value == 'CLOSED' %}
+          <span class="status cancelled">已关闭</span>
+        {% elif card.mine %}
+          <span class="status {{ card.mine.status.value|lower }}">{{ card.mine.status.label }}</span>
+        {% elif a.start_at <= now %}
+          <span class="status cancelled">已开始</span>
+        {% elif card.stats.is_full %}
+          <span class="status cancelled">名额已满</span>
+        {% else %}
+          <a class="btn" href="{{ url_for('student.detail', activity_id=a.activity_id) }}">查看并报名</a>
+        {% endif %}
+      </div>
+    </article>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty">没有匹配的活动。</p>
+{% endif %}
+{% endblock %}

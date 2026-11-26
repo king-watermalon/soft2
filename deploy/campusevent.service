@@ -1,0 +1,17 @@
+[Unit]
+Description=CampusEvent Flask app (gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/CampusEvent
+Environment="SECRET_KEY=CHANGE_ME_TO_A_LONG_RANDOM_STRING"
+Environment="DATABASE_PATH=/var/lib/campusevent/campusevent.sqlite3"
+ExecStart=/opt/CampusEvent/.venv/bin/gunicorn -w 2 -b 127.0.0.1:5000 --access-logfile - --error-logfile - wsgi:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

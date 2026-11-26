@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}管理台{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>管理台</h1>
+  <a class="btn" href="{{ url_for('admin.create_activity') }}">+ 新建活动</a>
+</div>
+
+<h2 class="section">待审核申请（{{ pending|length }}）</h2>
+{% if pending %}
+<table class="table">
+  <thead><tr><th>活动</th><th>学生</th><th>提交时间</th><th>操作</th></tr></thead>
+  <tbody>
+  {% for row in pending %}
+    <tr>
+      <td>{{ row.activity.title }}</td>
+      <td>{{ row.student.name if row.student else row.registration.student_id }}</td>
+      <td>{{ row.registration.created_at|dt }}</td>
+      <td class="inline-actions">
+        <form method="post" action="{{ url_for('admin.approve', registration_id=row.registration.registration_id) }}">
+          <button class="btn small" type="submit">批准</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.reject', registration_id=row.registration.registration_id) }}">
+          <button class="btn ghost small" type="submit">拒绝</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">没有待审核的申请。</p>
+{% endif %}
+
+<h2 class="section">活动一览</h2>
+<table class="table">
+  <thead>
+    <tr><th>活动</th><th>方式</th><th>开始时间</th><th>容量</th><th>已通过</th><th>待审核</th><th>剩余</th><th>操作</th></tr>
+  </thead>
+  <tbody>
+  {% for row in rows %}
+    {% set a = row.activity %}
+    <tr>
+      <td><a href="{{ url_for('admin.detail', activity_id=a.activity_id) }}">{{ a.title }}</a>
+        {% if a.status.value == 'CLOSED' %}<span class="status cancelled">已关闭</span>{% endif %}
+      </td>
+      <td>{{ a.policy_type.label }}</td>
+      <td>{{ a.start_at|dt }}</td>
+      <td>{{ a.capacity }}</td>
+      <td>{{ row.stats.approved }}</td>
+      <td>{{ row.stats.pending }}</td>
+      <td>{{ row.stats.remaining }}</td>
+      <td class="inline-actions">
+        <a class="btn ghost small" href="{{ url_for('admin.edit_activity', activity_id=a.activity_id) }}">编辑</a>
+        {% if a.status.value == 'OPEN' %}
+        <form method="post" action="{{ url_for('admin.close_activity', activity_id=a.activity_id) }}">
+          <button class="btn ghost small" type="submit">关闭</button>
+        </form>
+        {% endif %}
+        <form method="post" action="{{ url_for('admin.delete_activity', activity_id=a.activity_id) }}"
+              onsubmit="return confirm('确认删除该活动？已有报名的活动不允许删除。');">
+          <button class="btn ghost small danger" type="submit">删除</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

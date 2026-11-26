@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ activity.title }} · 报名名单{% endblock %}
+{% block content %}
+<p class="crumb"><a href="{{ url_for('admin.index') }}">← 返回管理台</a></p>
+<h1>{{ activity.title }}</h1>
+<p class="meta">{{ activity.policy_type.label }} · {{ activity.start_at|dt }} · 容量 {{ activity.capacity }}</p>
+
+<div class="stat-row">
+  <div><strong>{{ stats.approved }}</strong><span>已通过</span></div>
+  <div><strong>{{ stats.pending }}</strong><span>待审核</span></div>
+  <div><strong>{{ stats.remaining }}</strong><span>剩余名额</span></div>
+  <div><strong>{{ stats.rejected }}</strong><span>已拒绝</span></div>
+  <div><strong>{{ stats.cancelled }}</strong><span>已取消</span></div>
+</div>
+
+{% if registrations %}
+<table class="table">
+  <thead><tr><th>报名编号</th><th>学生</th><th>状态</th><th>提交时间</th><th>更新时间</th></tr></thead>
+  <tbody>
+  {% for row in registrations %}
+    <tr>
+      <td>#{{ row.registration.registration_id }}</td>
+      <td>{{ row.student.name if row.student else row.registration.student_id }}</td>
+      <td><span class="status {{ row.registration.status.value|lower }}">{{ row.registration.status.label }}</span></td>
+      <td>{{ row.registration.created_at|dt }}</td>
+      <td>{{ row.registration.updated_at|dt }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">还没有报名记录。</p>
+{% endif %}
+{% endblock %}

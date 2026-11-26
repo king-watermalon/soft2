@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}校园活动报名{% endblock %} · CampusEvent</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('student.index') }}">CampusEvent</a>
+  <nav>
+    <a href="{{ url_for('student.index') }}">活动列表</a>
+    {% if me %}
+      <a href="{{ url_for('student.my_registrations') }}">我的报名</a>
+      <a href="{{ url_for('student.messages') }}">站内消息{% if unread %}<span class="badge">{{ unread }}</span>{% endif %}</a>
+      {% if me.is_admin %}<a href="{{ url_for('admin.index') }}">管理台</a>{% endif %}
+      <span class="who">{{ me.name }}</span>
+      <a href="{{ url_for('auth.logout') }}">退出</a>
+    {% else %}
+      <a href="{{ url_for('auth.login') }}">登录</a>
+    {% endif %}
+  </nav>
+</header>
+
+<main>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flashes">
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer>软件工程课程实践 · CampusEvent</footer>
+</body>
+</html>
