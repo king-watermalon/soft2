@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}变更扩展管理{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>变更扩展管理</h1>
+  <a class="btn ghost" href="{{ url_for('admin.index') }}">返回原管理台</a>
+</div>
+
+<p class="empty">
+  本页承载 CR-01（年级限定报名）与 CR-02（模拟邮件通知）新增的配置与观测能力，
+  原管理台页面未做任何改动。
+</p>
+
+<h2 class="section">活动年级限定（CR-01）</h2>
+<table class="table">
+  <thead>
+    <tr>
+      <th>活动</th><th>报名方式</th><th>开始时间</th>
+      <th>已通过/容量</th><th>年级限定</th><th>设置</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for row in rows %}
+    {% set a = row.activity %}
+    <tr>
+      <td>{{ a.title }}</td>
+      <td>{{ a.policy_type.label }}</td>
+      <td>{{ a.start_at|dt }}</td>
+      <td>{{ row.stats.approved }}/{{ a.capacity }}</td>
+      <td>
+        {% if row.rule %}
+          <span class="status approved">{{ row.rule.label }}</span>
+          <span class="who">（{{ row.rule.raw }}）</span>
+        {% else %}
+          <span class="status cancelled">不限年级</span>
+        {% endif %}
+      </td>
+      <td>
+        <form method="post"
+              action="{{ url_for('ext_v2_admin.set_activity_grade', activity_id=a.activity_id) }}"
+              class="inline-actions">
+          <input type="text" name="grade_limit" placeholder="如 2,3；留空取消"
+                 value="{{ row.rule.raw if row.rule else '' }}" size="10">
+          <button class="btn small" type="submit">保存</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2 class="section">学生年级（CR-01）</h2>
+<table class="table">
+  <thead><tr><th>学号</th><th>姓名</th><th>角色</th><th>年级</th><th>设置</th></tr></thead>
+  <tbody>
+  {% for row in students %}
+    <tr>
+      <td>{{ row.student.student_id }}</td>
+      <td>{{ row.student.name }}</td>
+      <td>{{ '管理员' if row.student.is_admin else '学生' }}</td>
+      <td>{{ (row.grade ~ ' 年级') if row.grade else '未登记' }}</td>
+      <td>
+        <form method="post"
+              action="{{ url_for('ext_v2_admin.set_student_grade', student_id=row.student.student_id) }}"
+              class="inline-actions">
+          <select name="grade">
+            <option value="">未登记</option>
+            {% for g in [1, 2, 3, 4] %}
+              <option value="{{ g }}" {% if row.grade == g %}selected{% endif %}>{{ g }} 年级</option>
+            {% endfor %}
+          </select>
+          <button class="btn small" type="submit">保存</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2 class="section">
+  模拟邮件投递记录（CR-02）
+  <span class="who">
+    成功 {{ mail_counts.get('SENT', 0) }} 封 ·
+    失败 {{ mail_counts.get('FAILED', 0) }} 封
+  </span>
+</h2>
+{% if mails %}
+<table class="table">
+  <thead>
+    <tr><th>时间</th><th>收件人</th><th>主题</th><th>状态</th><th>错误</th></tr>
+  </thead>
+  <tbody>
+  {% for mail in mails %}
+    <tr>
+      <td>{{ mail.attempted_at }}</td>
+      <td>{{ mail.address }}</td>
+      <td>{{ mail.subject }}</td>
+      <td>
+        {% if mail.status == 'SENT' %}
+          <span class="status approved">已发送</span>
+        {% else %}
+          <span class="status rejected">失败</span>
+        {% endif %}
+      </td>
+      <td>{{ mail.error or '—' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">暂无邮件投递记录。学生报名通过或被拒绝后，这里会出现对应流水。</p>
+{% endif %}
+{% endblock %}
